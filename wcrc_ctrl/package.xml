@@ -13,7 +13,16 @@
   <test_depend>python3-pytest</test_depend>
   
   <exec_depend>ros2launch</exec_depend>
-
+  <!-- odom -->
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>tf2_geometry_msgs</exec_depend>
+  <exec_depend>tf2</exec_depend>
+  <!-- cmd_vel -->
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  
   <export>
     <build_type>ament_python</build_type>
   </export>

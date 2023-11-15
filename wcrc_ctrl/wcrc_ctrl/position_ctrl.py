@@ -8,14 +8,17 @@ from std_msgs.msg import String
 from nav_msgs.msg import Odometry
 import math
 import transformations
-
-
+from rclpy.qos import QoSProfile
+from rclpy.qos import QoSReliabilityPolicy
+import numpy as np
 class PositionControl(Node):
     def __init__(self):
         super().__init__('position_control')
 
+        print("start init")
+        qos_profile = QoSProfile(depth=10, reliability=QoSReliabilityPolicy.BEST_EFFORT)
         self.odom_sub = self.create_subscription(
-            Odometry, 'odom', self.odom_callback, 10)
+            Odometry, '/odometry/filtered', self.odom_callback, qos_profile)
 
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.cmd_vel_msg = Twist()
@@ -48,7 +51,7 @@ class PositionControl(Node):
         self.current_distance = 0.0
 
         # 목표 각도와 현재 각도
-        self.target_theta = 1.57  # 예시로 설정된 목표 각도 (π/2 라디안)
+        self.target_theta = np.deg2rad(91.25)   # 예시로 설정된 목표 각도 (π/2 라디안)
         self.current_theta = 0.0  # 현재 각도
 
         # 이동 시작 위치 및 방향 정보
@@ -62,10 +65,11 @@ class PositionControl(Node):
         # control flag
         self.is_step_start = False
         # 허용 오차 범위
-        self.error_range = 0.1
+        self.error_range = 0.04
 
+        self.info("start init")
         # timer
-        self.timer = self.create_timer(0.01, self.timer_callback)
+        self.timer = self.create_timer(0.1, self.timer_callback)
 
         # Initialize class variables or state parameters here if needed.
         self.control_dict = {
@@ -82,16 +86,17 @@ class PositionControl(Node):
         }
 
         self.cmd_moving = None
-
+        self.flag = False
     def command_callback(self, msg):
         self.cmd_moving = msg.data
         # 올바른 입력이 아닐 경우
         if self.cmd_moving not in self.control_dict.keys():
             self.error("Wrong command")
         else:
-            self.control_dict[self.cmd_moving]()
-            self.info("Command: " + self.cmd_moving)
-            self.flag_1 = True
+            if self.flag == False: 
+                self.control_dict[self.cmd_moving]()
+                self.info("Command: " + self.cmd_moving)
+                self.flag = True
 
     # 시작 flag와 완료 flag를 이용하여 명령 수행
 
@@ -104,7 +109,7 @@ class PositionControl(Node):
 
     def odom_callback(self, msg):
         self.odom_msg = msg
-
+        # print("start")
         quaternion = (self.odom_msg.pose.pose.orientation.x, self.odom_msg.pose.pose.orientation.y,
                       self.odom_msg.pose.pose.orientation.z, self.odom_msg.pose.pose.orientation.w)
         # quaternion to euler
@@ -124,6 +129,7 @@ class PositionControl(Node):
 
         self.current_pos_x = self.odom_msg.pose.pose.position.x
         self.current_pos_y = self.odom_msg.pose.pose.position.y
+        # print(self.current_pos_x)
 
     def euler_from_quaternion(self, quaternion):
         # Convert the Quaternion to a list [x, y, z, w]
@@ -164,7 +170,7 @@ class PositionControl(Node):
         control = Kp * error + Kd * (error - self.lastError) + Ki * (error)
         self.lastError = error
 
-        if math.fabs(error) > self.error_range:
+        if math.fabs(error) > self.error_range - 0.0:
             self.drive(0.0, -2*control)
             print("error " + str(error), self.current_theta,
                   "       ", self.disired_theta)
@@ -173,6 +179,7 @@ class PositionControl(Node):
             self.is_step_start = False
             self.info("left turn end")
             self.cmd_moving = None
+            self.flag = False
             return True
         return False
 
@@ -192,7 +199,7 @@ class PositionControl(Node):
         control = Kp * error + Kd * (error - self.lastError) + Ki * (error)
         self.lastError = error
 
-        if math.fabs(error) > self.error_range:
+        if math.fabs(error) > self.error_range - 0.0:
             self.drive(0.0, -2*control)
             # print("error ", error)
             print("error " + str(error), self.current_theta,
@@ -202,6 +209,7 @@ class PositionControl(Node):
             self.is_step_start = False
             self.info("right turn end")
             self.cmd_moving = None
+            self.flag = False
             return True
         return False
 
@@ -228,13 +236,14 @@ class PositionControl(Node):
         self.lastError = error
 
         if math.fabs(error) > self.error_range:
-            self.drive(control, 0.0)
+            self.drive(2*control, 0.0)
             print("error ", error)
         else:
             self.drive(0.0, 0.0)
             self.is_step_start = False
             self.info("back end")
             self.cmd_moving = None
+            self.flag = False
             return True
         return False
 
@@ -257,13 +266,14 @@ class PositionControl(Node):
         self.lastError = error
 
         if math.fabs(error) > self.error_range:
-            self.drive(-control, 0.0)
+            self.drive(-2*control, 0.0)
             print("error ", error)
         else:
             self.drive(0.0, 0.0)
             self.is_step_start = False
             self.info("go end")
             self.cmd_moving = None
+            self.flag = False
             return True
         return False
 
