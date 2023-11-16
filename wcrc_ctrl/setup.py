@@ -24,7 +24,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'position_ctrl = wcrc_ctrl.position_ctrl:main',
+            'MovingControl = wcrc_ctrl.MovingControl:main',
+            'main = wcrc_ctrl.main:main',
         ],
     },
 )
