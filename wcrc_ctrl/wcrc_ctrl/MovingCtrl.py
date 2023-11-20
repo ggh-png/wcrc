@@ -9,9 +9,9 @@ from nav_msgs.msg import Odometry
 import math
 import transformations
 import numpy as np
-from .Logger import Logger
-from .Sensor import Sensor
-
+from wcrc_ctrl.Logger import Logger
+from wcrc_ctrl.Sensor import Sensor
+from wcrc_ctrl.LaneDetector import LaneDetector
 
 class MovingCtrl:
     def __init__(self, node: Node):
@@ -22,7 +22,8 @@ class MovingCtrl:
         self.node = node
         self.logger = Logger(self.node)
         self.sensor = Sensor(self.node)
-
+        self.lane_detector = LaneDetector(self.node)
+        
         self.cmd_vel_pub = self.node.create_publisher(Twist, '/cmd_vel', 10)
         self.cmd_vel_msg = Twist()
 
@@ -41,6 +42,7 @@ class MovingCtrl:
         self.lastError = 0  # PID 제어를 위한 이전 오차
         self.last_current_theta = 0.0  # 이전의 현재 각도
         self.last_current_pos = 0.0  # 이전의 현재 위치 (미사용)
+        self.last_angle_error = 0.0  # 이전의 각도 오차
 
         # 이동 명령 관련 변수
         self.cmd_moving = None  # 이동 명령 (앞으로 이동, 뒤로 이동, 등)
@@ -224,6 +226,7 @@ class MovingCtrl:
 
     def go_straight(self):
         # self.logger.info("go")
+        # linear pid
         Kp = 0.8
         Ki = 0.0
         Kd = 0.05
@@ -240,8 +243,20 @@ class MovingCtrl:
         control = Kp * error + Kd * (error - self.lastError) + Ki * (error)
         self.lastError = error
 
+        Ap = 0.8
+        Ai = 0.0
+        Ad = 0.05
+        angle_error = 10.0
+        current_angle = self.lane_detector(self.sensor.camera_msg)
+        angle_error = current_angle - 320
+        control_angle = Ap * angle_error + Ad * \
+            (angle_error - self.last_angle_error) + Ai * (angle_error)
+        self.last_angle_error = angle_error
+        
+
+
         if math.fabs(error) > self.error_range:
-            self.drive(-2*control, 0.0)
+            self.drive(-2*control, control_angle)
             # self.logger.info("error " + str(error))
         else:
             self.drive(0.0, 0.0)

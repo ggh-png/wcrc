@@ -1,8 +1,8 @@
 import rclpy
 from rclpy.node import Node
-from .WcrcCtrl import WcrcCtrl
-from .Logger import Logger
-
+from wcrc_ctrl.WcrcCtrl import WcrcCtrl
+from wcrc_ctrl.Logger import Logger
+from wcrc_ctrl.Sensor import Sensor
 # cmd_vel
 from geometry_msgs.msg import Twist
 
@@ -13,12 +13,17 @@ class Wcrc(Node):
         self.logger = Logger(self)
         self.timer = self.create_timer(0.1, self.control)
         self.wcrc_ctrl = WcrcCtrl(self)
+        self.sensor = Sensor(self)
+        
         self.logger.info("wcrc_node started")
         self.wcrc_ctrl.mode = "direction"
 
         # self.wcrc.right()
 
     def control(self):
+        if self.sensor.init() == False:
+            self.logger.info("wcrc_ctrl sensor wait...")
+            return
         self.wcrc_ctrl.control()
 
 

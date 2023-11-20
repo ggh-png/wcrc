@@ -7,9 +7,9 @@ from geometry_msgs.msg import Twist
 from std_msgs.msg import String
 import numpy as np
 
-from .Sensor import Sensor
-from .Logger import Logger
-from .MovingCtrl import MovingCtrl
+from wcrc_ctrl.Sensor import Sensor
+from wcrc_ctrl.Logger import Logger
+from wcrc_ctrl.MovingCtrl import MovingCtrl
 
 
 class WcrcCtrl:
@@ -35,7 +35,7 @@ class WcrcCtrl:
         self.logger.info("wcrc_ctrl started")
         self.logger.info("wcrc_ctrl sensor wait...")
 
-        self.mode = "direction"
+        self.mode = "back"
 
         # 이전 방향을 저장하는 변수
 
@@ -298,7 +298,7 @@ class WcrcCtrl:
         # 로봇의 현재 모드를 확인하고 해당 모드에 맞는 함수를 호출합니다.
         # data가 없으면 아무것도 하지 않습니다.
         # self.logger.info("wcrc_ctrl control")
-        if self.sensor.odom_msg is not None:
+        if self.sensor.odom_msg is not None and self.sensor.camera_msg is not None:
             self.control_dict[self.mode]()
             # self.logger.info(self.mode)
             # self.moving_ctrl("right")
