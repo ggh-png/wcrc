@@ -19,7 +19,7 @@ class Sensor:
         qos_profile = QoSProfile(
             depth=10, reliability=QoSReliabilityPolicy.RELIABLE)
         self.sub_odom = self.node.create_subscription(
-            Odometry, '/odom', self.odom_callback, 10)
+            Odometry, '/odometry/filtered', self.odom_callback, 10)
         self.sub_camera = self.node.create_subscription(
             Image, '/camera/image_raw', self.camera_callback, qos_profile)
 
