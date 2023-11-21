@@ -170,7 +170,7 @@ class LaneDetector:
             self.lane = closest_lane
         else:
             # ?? ??? ??? ??? ???? ?????.
-            self.lane = 1400
+            self.lane = 320
 
     def mark_lane(self, img, lane=None):
         '''
@@ -190,7 +190,6 @@ class LaneDetector:
         #            3, blue, 5, cv2.FILLED)
         cv2.imshow('marked', img)
         cv2.waitKey(1)
-      
 
     def __call__(self, img):
         '''
@@ -211,4 +210,3 @@ class LaneDetector:
 
         return self.target_lane
         # return float(self.target_lane)
-

@@ -6,6 +6,7 @@ from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
 from wcrc_ctrl.Logger import Logger
 import time
+from cv_bridge import CvBridge, CvBridgeError
 
 
 class Sensor:
@@ -19,13 +20,19 @@ class Sensor:
         qos_profile = QoSProfile(
             depth=10, reliability=QoSReliabilityPolicy.RELIABLE)
         self.sub_odom = self.node.create_subscription(
-            Odometry, '/odometry/filtered', self.odom_callback, 10)
+            Odometry, '/odom', self.odom_callback, 10)
         self.sub_camera = self.node.create_subscription(
-            Image, '/camera2/color/image_raw', self.camera_callback, qos_profile)
+            Image, '/camera/image_raw', self.camera_callback, 10)
+
+        # self.sub_odom = self.node.create_subscription(
+        #     Odometry, '/odometry/filtered', self.odom_callback, 10)
+        # self.sub_camera = self.node.create_subscription(
+        #     Image, '/camera2/color/image_raw', self.camera_callback, qos_profile)
 
         # Sensor data
         self.odom_msg = None
         self.camera_msg = None
+        self.cv_bridge = CvBridge()
         self.command = None
 
     def odom_callback(self, msg):
@@ -33,11 +40,16 @@ class Sensor:
         self.odom_msg = msg
 
     def camera_callback(self, msg):
-        # self.node.get_logger().info('Camera callback triggered')
-        self.camera_msg = msg
+        # Convert the ROS Image message to OpenCV format
+        try:
+            cv_image = self.cv_bridge.imgmsg_to_cv2(
+                msg, desired_encoding='bgr8')
+            self.camera_msg = cv_image  # Assign the converted image to camera_msg
+        except CvBridgeError as e:
+            self.logger.error('Failed to convert image: %s' % str(e))
 
     def init(self):
-        self.logger.info("wcrc_ctrl sensor wait...")
+        # self.logger.info("wcrc_ctrl sensor wait...")
         if self.odom_msg is not None and self.camera_msg is not None:
             return True
         else:
