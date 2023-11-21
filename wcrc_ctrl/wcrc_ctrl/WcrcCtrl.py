@@ -45,16 +45,18 @@ class WcrcCtrl:
             "direction": self.search_all_directions,
             "back": self.back,
             "goback": self.goback,
+            "go": self.go,
         }
 
         # dfs를 이용한 맵 생성 string으로 변환eeeeeㄴㅁㄴㅇㅁㄴ
         # 6 X 6 맵을 만듭니다.
         self.map = [[0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0],
-                    [0, 0, 1, 1, 0, 0],
-                    [0, 0, 1, 1, 0, 0],
+                    [0, 1, 1, 1, 0, 0],
+                    [0, 0, 0, 1, 0, 0],
                     [0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0]]
+        
         # 맵의 중앙에 로봇을 놓습니다.
         # 로봇의 현재 위치를 기록합니다.
 
@@ -74,7 +76,16 @@ class WcrcCtrl:
         self.dx = [1, 0, -1, 0]
         self.cnt = 0
         self.stack.append((self.y, self.x, self.dir))
+        self.stack.append((self.y, self.x, self.dir))
         self.init_flag = False
+        
+        self.go_flag = True
+        
+        self.direction_check = [0, 0, 0, 0]
+        self.terminate_cnt = 0
+        self.terminate_turn_cnt = 0
+        
+        
         # 재귀로 구현
     # 0이면 노드가 없는 곳, 1이면 노드가 있는 곳
 
@@ -90,6 +101,9 @@ class WcrcCtrl:
         # self.dir = 0
 
         # 왼쪽 방향으로 90도 회전 후 탐색
+        # self.init_flag = False
+        # all direction search check list 
+        # direction_check = [0, 0, 0, 0]
         if self.dir == 0:
             node_present = self.current_node
             nx, ny = self.x + \
@@ -116,6 +130,7 @@ class WcrcCtrl:
                     return
                 else:
                     self.dir += 1
+                    self.direction_check[0] = 1
                     return
         # 아래쪽 방향으로 90도 회전 후 탐색
         elif self.dir == 1:
@@ -146,6 +161,7 @@ class WcrcCtrl:
                     return
                 else:
                     self.dir += 1
+                    self.direction_check[1] = 1
                     return
 
         # 오른쪽 방향으로 90도 회전 후 탐색
@@ -175,6 +191,7 @@ class WcrcCtrl:
                     return
                 else:
                     self.dir += 1
+                    self.direction_check[2] = 1
                     return
 
         # 노드가 없는 경우에는 왼쪽으로 회전하고 다시 탐색합니다.
@@ -205,11 +222,19 @@ class WcrcCtrl:
                     return
                 else:
                     self.dir += 1
+                    self.direction_check[3] = 1
                     return
+                
+                
+        for i in range(4):
+            if self.direction_check[i] == 0:
+                self.dir = 0
+                return
 
         # 모든 방향을 탐색했다면, 복귀합니다.
+        self.init_flag = True
         self.mode = "back"
-        # self.dir = 0
+        
         return
 
     def forward(self):
@@ -221,13 +246,21 @@ class WcrcCtrl:
             # 전진이 완료되면 dfs를 다시 시작합니다.
             # self.map[self.y][self.x] = self.node_name
             # self.dir = 0
-
+            self.direction_check = [0, 0, 0, 0]
+            self.direction_check[self.dir] = 1
             self.mode = "direction"
+            return
 
     def goback(self):
         if self.stack == 0:
-            self.mode = "direction"
-            self.current_node = 1
+            if self.init_flag == False:
+                self.mode = "direction"
+                self.current_node = 1
+                return
+
+            else:
+                self.mode = "direction"
+                return
         # 전진이 완료될떄까지 이 모드는 계속해서 호출됩니다.
         if not self.moving_ctrl("forward"):
             self.moving_ctrl("forward")
@@ -240,23 +273,37 @@ class WcrcCtrl:
             self.mode = "back"
 
     def terminate(self):
-        self.logger.info("terminate")
-        self.moving_ctrl("stop")
-        # 맵 정보를 출력합니다.
-        for i in range(6):
-            for j in range(6):
-                print(self.map[i][j], end=" ")
-            print()
+        if self.terminate_turn_cnt == 2:        
+            self.logger.info("terminate")
+            self.moving_ctrl("stop")
+            # 맵 정보를 출력합니다.
+            for i in range(6):
+                for j in range(6):
+                    print(self.map[i][j], end=" ")
+                print()
+            return
+        if not self.moving_ctrl("right"):
+            self.moving_ctrl("right")
+            return
+        else:
+            self.terminate_turn_cnt += 1
+        
+
 
     # 복귀하는 함수
 
     def back(self):
         # self.current_node = 0
+        
         self.logger.info("back")
         if not self.stack:
             self.mode = "direction"
-
+            self.terminate_cnt += 1
+            if self.terminate_cnt == 2:
+                self.mode = "terminate"
             return
+
+
         # 스택이 비어있지 않다면 복귀합니다.
         # 가장 이전의 방문했던 노드의 정보를 가져옵니다.
         y, x, dir = self.stack[-1]
@@ -271,16 +318,11 @@ class WcrcCtrl:
                     self.moving_ctrl("right")
                 else:
                     self.dir -= 1
-                    if self.dir == -1:
-                        self.dir = 3
             else:
                 if not self.moving_ctrl("left"):
                     self.moving_ctrl("left")
                 else:
-
                     self.dir += 1
-                    if self.dir == 4:
-                        self.dir = 0
 
         # 회전이 완료되면 전진합니다.
         else:
@@ -291,6 +333,13 @@ class WcrcCtrl:
                 self.stack.pop()
                 self.x, self.y = x, y
             return
+    def go(self):
+        if not self.moving_ctrl("forward"):
+            self.moving_ctrl("forward")
+        else:
+            self.go_flag = False
+            return
+        
 
     def control(self):
         # 로봇의 현재 모드를 확인하고 해당 모드에 맞는 함수를 호출합니다.

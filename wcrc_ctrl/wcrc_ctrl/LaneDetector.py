@@ -40,7 +40,7 @@ class LaneDetector:
         # initial state
         self.angle = 0.0
         self.prev_angle = deque([0.0], maxlen=5)
-        self.lane = np.array([90.0, 320., 568.])
+        self.lane = np.array([1280])
 
         # filtering params:
         self.angle_tolerance = np.radians(30)
@@ -198,9 +198,9 @@ class LaneDetector:
         cte : pixels
         '''
         if img is None:
-            return 320
-        canny = self.to_canny(img, show=False)
-        bev = self.bev(canny, show=False)
+            return 640
+        canny = self.to_canny(img, show=True)
+        bev = self.bev(canny, show=True)
         lines = self.hough(bev, show=False)
         positions = self.filter(lines, show=False)
         lane_candidates = self.get_cluster(positions)

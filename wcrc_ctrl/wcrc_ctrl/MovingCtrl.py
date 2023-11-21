@@ -11,7 +11,7 @@ import transformations
 import numpy as np
 from wcrc_ctrl.Logger import Logger
 from wcrc_ctrl.Sensor import Sensor
-from wcrc_ctrl.LaneDetector import LaneDetector
+# from wcrc_ctrl.LaneDetector import LaneDetector
 
 
 class MovingCtrl:
@@ -23,7 +23,7 @@ class MovingCtrl:
         self.node = node
         self.logger = Logger(self.node)
         self.sensor = Sensor(self.node)
-        self.lane_detector = LaneDetector(self.node)
+        # self.lane_detector = LaneDetector(self.node)
 
         self.cmd_vel_pub = self.node.create_publisher(Twist, '/cmd_vel', 10)
         self.cmd_vel_msg = Twist()
@@ -244,22 +244,24 @@ class MovingCtrl:
         control = Kp * error + Kd * (error - self.lastError) + Ki * (error)
         self.lastError = error
 
-        Ap = 0.8
-        Ai = 0.0
-        Ad = 0.05
-        angle_error = 10.0
-        if self.sensor.camera_msg is None:
-            self.logger.info("no camera msg")
-            return False
+        # Ap = 0.0008
+        # Ai = 0.0
+        # Ad = 0.0006
+        # angle_error = 10.0
+        # if self.sensor.camera_msg is None:
+        #     self.logger.info("no camera msg")
+        #     return False
 
-        current_angle = self.lane_detector(self.sensor.camera_msg)
-        angle_error = current_angle - 320
-        control_angle = Ap * angle_error + Ad * \
-            (angle_error - self.last_angle_error) + Ai * (angle_error)
-        self.last_angle_error = angle_error
+        # current_angle = self.lane_detector(self.sensor.camera_msg)
+        # # print(current_angle)
+        # angle_error = current_angle - 320
+        # control_angle = Ap * angle_error + Ad * \
+        #     (angle_error - self.last_angle_error) + Ai * (angle_error)
+        # self.last_angle_error = angle_error
 
         if math.fabs(error) > self.error_range:
-            self.drive(-2*control, control_angle)
+            self.drive(-2*control, 0.0)
+            # self.drive(-0.5*control, -control_angle)
             # self.logger.info("error " + str(error))
         else:
             self.drive(0.0, 0.0)

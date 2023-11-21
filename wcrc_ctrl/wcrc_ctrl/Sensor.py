@@ -19,19 +19,19 @@ class Sensor:
         # Subscriptions
         qos_profile = QoSProfile(
             depth=10, reliability=QoSReliabilityPolicy.RELIABLE)
-        self.sub_odom = self.node.create_subscription(
-            Odometry, '/odom', self.odom_callback, 10)
-        self.sub_camera = self.node.create_subscription(
-            Image, '/camera/image_raw', self.camera_callback, 10)
-
         # self.sub_odom = self.node.create_subscription(
-        #     Odometry, '/odometry/filtered', self.odom_callback, 10)
+        #     Odometry, '/odom', self.odom_callback, 10)
         # self.sub_camera = self.node.create_subscription(
-        #     Image, '/camera2/color/image_raw', self.camera_callback, qos_profile)
+        #     Image, '/camera/image_raw', self.camera_callback, 10)
+
+        self.sub_odom = self.node.create_subscription(
+            Odometry, '/odometry/filtered', self.odom_callback, 10)
+        self.sub_camera = self.node.create_subscription(
+            Image, '/camera2/color/image_raw', self.camera_callback, qos_profile)
 
         # Sensor data
         self.odom_msg = None
-        self.camera_msg = None
+        self.camera_msg = 1
         self.cv_bridge = CvBridge()
         self.command = None
 
