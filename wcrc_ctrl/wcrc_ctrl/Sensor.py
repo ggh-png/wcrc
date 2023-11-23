@@ -9,6 +9,8 @@ import time
 from cv_bridge import CvBridge, CvBridgeError
 
 
+from wcrc_ctrl.LaneDetector import LaneDetector
+
 class Sensor:
     def __init__(self, node: Node):
         # Ensure that the node argument is indeed an instance of rclpy.node.Node
@@ -29,11 +31,16 @@ class Sensor:
         self.sub_camera = self.node.create_subscription(
             Image, '/camera2/color/image_raw', self.camera_callback, qos_profile)
 
+
+        self.lane_detector = LaneDetector(self.node)
+
+
         # Sensor data
         self.odom_msg = None
-        self.camera_msg = 1
+        self.camera_msg = None
         self.cv_bridge = CvBridge()
         self.command = None
+        self.detected_lane = None
 
     def odom_callback(self, msg):
         # self.node.get_logger().info('Odometry callback triggered')
@@ -47,10 +54,13 @@ class Sensor:
             self.camera_msg = cv_image  # Assign the converted image to camera_msg
         except CvBridgeError as e:
             self.logger.error('Failed to convert image: %s' % str(e))
+            
+        self.detected_lane = self.lane_detector(self.camera_msg)
+        # self.logger.warn(str(self.detected_lane))
 
     def init(self):
         # self.logger.info("wcrc_ctrl sensor wait...")
-        if self.odom_msg is not None and self.camera_msg is not None:
+        if self.odom_msg is not None and self.camera_msg is not None and self.detected_lane is not None:
             return True
         else:
             return False
