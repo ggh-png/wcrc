@@ -29,6 +29,8 @@ class LaneDetector:
         if not isinstance(node, Node):
             raise TypeError("Logger expects an rclpy.node.Node instance.")
 
+        self.node = node
+        self.logger = Logger(self.node)
         self.bev = BEV()
 
         # canny params
@@ -226,10 +228,10 @@ class LaneDetector:
         if img is None:
             return 1004
 
-        canny = self.to_canny(img, show=True)
+        canny = self.to_canny(img, show=False)
         image_height = img.shape[0]
         image_width = img.shape[1]
-        x_padding = 500
+        x_padding = 300
         y_top_padding = 660
         # 1280 x 720
         roi_org = img[y_top_padding:720, x_padding:image_width-x_padding]
@@ -242,7 +244,7 @@ class LaneDetector:
         mean = [0, 0, 0]
         means = []
         black_min_means = [150, 150, 150]
-        yellow_min_means = [120, 200, 230]
+        yellow_min_means = [100, 180, 210]
         yellow_max_means = [160, 255, 255]
 
         goal_means = yellow_min_means
@@ -271,6 +273,7 @@ class LaneDetector:
                 detected = True
                 
             # print(mean_values)
+            # self.logger.warn(str(mean_values))
             # cv2.imshow('max_roi', roi)
             # cv2.waitKey(0)
 
@@ -278,16 +281,11 @@ class LaneDetector:
 
         print("detected: ", detected)
         # bev = self.bev(canny, show=True)
-        lines = self.hough(bev, show=True)
 
-        cv2.imshow('bev', bev)
-        cv2.waitKey(1)
+        # cv2.imshow('bev', bev)
+        # cv2.waitKey(1)
 
-        positions = self.filter(lines, show=False)
-        lane_candidates = self.get_cluster(positions)
-        predicted_lane = self.predict_lane()
-        self.update_lane(lane_candidates, predicted_lane)
-        self.mark_lane(bev)
+     
 
-        return self.target_lane
+        return detected
         # return float(self.target_lane)

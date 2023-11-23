@@ -43,6 +43,10 @@ class WcrcCtrl:
 
         self.control_dict = {
             "forward":  self.forward,
+            "half_1_forward": self.half_1_forward,
+            "half_2_forward": self.half_2_forward,
+            "half_1_backward": self.half_1_backward,
+            "half_2_backward": self.half_2_backward,
             "terminate": self.terminate,
             "direction": self.search_all_directions,
             "back": self.back,
@@ -52,18 +56,18 @@ class WcrcCtrl:
 
         # dfs를 이용한 맵 생성 string으로 변환eeeeeㄴㅁㄴㅇㅁㄴ
         # 6 X 6 맵을 만듭니다.
-        self.map = [[0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0],
-                    [0, 0, 1, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0]]
+        self.map = [['Nooone', 'Nooone', 'Nooone', 'Nooone', 'Nooone', 'Nooone'],
+                    ['Nooone', 'Nooone', 'Nooone', 'Nooone', 'Nooone', 'Nooone'],
+                    ['Nooone', 'Nooone', 'Nooone', 'Nooone', 'Nooone', 'Nooone'],
+                    ['Nooone', 'Nooone', 'Nooone', 'Nooone', 'Nooone', 'Nooone'],
+                    ['Nooone', 'Nooone', 'Nooone', 'Nooone', 'Nooone', 'Nooone'],
+                    ['Nooone', 'Nooone', 'Nooone', 'Nooone', 'Nooone', 'Nooone'],
+        ]
 
         # 맵의 중앙에 로봇을 놓습니다.
         # 로봇의 현재 위치를 기록합니다.
 
         self.stack = []
-        self.map[2][2] = 1
 
         self.x, self.y = 2, 2
         self.dir = 0
@@ -86,6 +90,9 @@ class WcrcCtrl:
         self.direction_check = [0, 0, 0, 0]
         self.terminate_cnt = 0
         self.terminate_turn_cnt = 0
+
+        self.detect_cnt = 0
+        self.half_forward_flag = False
 
         # 재귀로 구현
     # 0이면 노드가 없는 곳, 1이면 노드가 있는 곳
@@ -111,7 +118,8 @@ class WcrcCtrl:
             nx, ny = self.x + \
                 self.dx[self.dir], self.y + \
                 self.dy[self.dir]
-            if node_present is not 1004   and self.visited[ny][nx] == 0:
+            if node_present == True and self.visited[ny][nx] == 0 and not self.moving_ctrl.is_step_start:
+                
                 if self.visited[ny][nx]:
                     return
                 self.visited[ny][nx] = 1
@@ -124,7 +132,7 @@ class WcrcCtrl:
                 self.stack.append((self.y, self.x, self.dir))
                 self.y, self.x = ny, nx
 
-                self.mode = "forward"
+                self.mode = "half_1_forward"
                 return
             else:
                 if not self.moving_ctrl("left"):
@@ -140,7 +148,7 @@ class WcrcCtrl:
             nx, ny = self.x + \
                 self.dx[self.dir], self.y + \
                 self.dy[self.dir]
-            if node_present is not 1004   and self.visited[ny][nx] == 0:
+            if node_present == True   and self.visited[ny][nx] == 0 and not self.moving_ctrl.is_step_start:
 
                 # 이미 방문한 곳이라면 방향을 바꿔서 탐색합니다.
                 if self.visited[ny][nx]:
@@ -155,7 +163,7 @@ class WcrcCtrl:
                 self.stack.append((self.y, self.x, self.dir))
                 self.y, self.x = ny, nx
 
-                self.mode = "forward"
+                self.mode = "half_1_forward"
                 return
             else:
                 if not self.moving_ctrl("left"):
@@ -172,7 +180,7 @@ class WcrcCtrl:
             nx, ny = self.x + \
                 self.dx[self.dir], self.y + \
                 self.dy[self.dir]
-            if node_present is not 1004   and self.visited[ny][nx] == 0:
+            if node_present == True and self.visited[ny][nx] == 0 and not self.moving_ctrl.is_step_start:
                 if self.visited[ny][nx]:
                     return
                 self.visited[ny][nx] = 1
@@ -185,7 +193,7 @@ class WcrcCtrl:
                 self.stack.append((self.y, self.x, self.dir))
                 self.y, self.x = ny, nx
 
-                self.mode = "forward"
+                self.mode = "half_1_forward"
                 return
             else:
                 if not self.moving_ctrl("left"):
@@ -202,7 +210,7 @@ class WcrcCtrl:
             nx, ny = self.x + \
                 self.dx[self.dir], self.y + \
                 self.dy[self.dir]
-            if node_present is not 1004  and self.visited[ny][nx] == 0:
+            if node_present == True  and self.visited[ny][nx] == 0 and not self.moving_ctrl.is_step_start:
                 if self.visited[ny][nx]:
                     return
                 self.visited[ny][nx] = 1
@@ -216,7 +224,7 @@ class WcrcCtrl:
                 self.stack.append((self.y, self.x, self.dir))
                 self.y, self.x = ny, nx
 
-                self.mode = "forward"
+                self.mode = "half_1_forward"
                 return
             else:
                 if not self.moving_ctrl("left"):
@@ -251,6 +259,78 @@ class WcrcCtrl:
             self.direction_check[self.dir] = 1
             self.mode = "direction"
             return
+      
+        
+    def half_1_forward(self):
+        # 전진이 완료될떄까지 이 모드는 계속해서 호출됩니다.
+        if not self.moving_ctrl("half_forward_1") and self.half_forward_flag == False:
+            self.moving_ctrl("half_forward_1")
+            return
+        else:
+            self.half_forward_flag = True
+            node_name = self.sensor.shape 
+            self.detect_cnt += 1
+            if self.detect_cnt == 20: 
+                
+                if node_name == "None":
+                    self.mode = "half_2_forward"
+                    return
+                self.map[self.y][self.x] = node_name
+                self.mode = "half_2_forward"
+                return
+            else:
+                self.moving_ctrl("stop")
+                return
+    def half_2_forward(self):
+        if not self.moving_ctrl("half_forward_2"):
+            self.moving_ctrl("half_forward_2")
+            
+            return
+        else:
+            # 전진이 완료되면 dfs를 다시 시작합니다.
+            # self.map[self.y][self.x] = self.node_name
+            # self.dir = 0
+            self.detect_cnt = 0
+            self.half_forward_flag = False
+            self.direction_check = [0, 0, 0, 0]
+            self.direction_check[self.dir] = 1
+            self.mode = "direction"
+            return
+        
+    def half_1_backward(self):
+        # 전진이 완료될떄까지 이 모드는 계속해서 호출됩니다.
+        if not self.moving_ctrl("half_forward_1") and self.half_forward_flag == False:
+            self.moving_ctrl("half_forward_1")
+            return
+        else:
+            self.half_forward_flag = True
+            node_name = self.sensor.shape 
+            self.detect_cnt += 1
+            if self.detect_cnt == 20: 
+                if node_name == "None" or self.map[self.y][self.x] != "Nooone":
+                    self.mode = "half_2_backward"
+                    return
+                self.map[self.y][self.x] = node_name
+                self.mode = "half_2_backward"
+                return
+            else:
+                self.moving_ctrl("stop")
+                return
+    def half_2_backward(self):
+        if not self.moving_ctrl("half_forward_2"):
+            self.moving_ctrl("half_forward_2")
+            
+            return
+        else:
+            # 전진이 완료되면 dfs를 다시 시작합니다.
+            # self.map[self.y][self.x] = self.node_name
+            # self.dir = 0
+            self.detect_cnt = 0
+            self.half_forward_flag = False
+            # self.direction_check = [0, 0, 0, 0]
+            # self.direction_check[self.dir] = 1
+            self.mode = "back"
+            return
 
     def goback(self):
         if self.stack == 0:
@@ -263,15 +343,18 @@ class WcrcCtrl:
                 self.mode = "direction"
                 return
         # 전진이 완료될떄까지 이 모드는 계속해서 호출됩니다.
-        if not self.moving_ctrl("forward"):
-            self.moving_ctrl("forward")
-            return
-        else:
-            # 전진이 완료되면 dfs를 다시 시작합니다.
-            self.map[self.y][self.x] = self.node_name
-            # self.dir = 0
 
-            self.mode = "back"
+        self.mode = "half_1_backward"
+        
+        # if not self.moving_ctrl("forward"):
+        #     self.moving_ctrl("forward")
+        #     return
+        # else:
+        #     # 전진이 완료되면 dfs를 다시 시작합니다.
+        #     self.map[self.y][self.x] = self.sensor.shape
+        #     # self.dir = 0
+
+        #     self.mode = "back"
 
     def terminate(self):
         if self.terminate_turn_cnt == 2:
@@ -366,7 +449,6 @@ class WcrcCtrl:
         # data가 없으면 아무것도 하지 않습니다.
         # self.logger.info("wcrc_ctrl control")
         if self.sensor.odom_msg is not None and self.sensor.camera_msg is not None:
+            # pass
             self.control_dict[self.mode]()
-            # self.logger.info(self.mode)
-            # self.moving_ctrl("right")
-            # print(self.sensor.odom_msg)
+            print(self.detect_cnt)

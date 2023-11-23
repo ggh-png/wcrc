@@ -2,6 +2,8 @@ import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image
+from std_msgs.msg import String
+
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
 from wcrc_ctrl.Logger import Logger
@@ -29,8 +31,10 @@ class Sensor:
         self.sub_odom = self.node.create_subscription(
             Odometry, '/odometry/filtered', self.odom_callback, 10)
         self.sub_camera = self.node.create_subscription(
-            Image, '/camera2/color/image_raw', self.camera_callback, qos_profile)
+            Image, '/camera2/color/image_raw', self.camera_callback, 5)
 
+        self.sub_shape = self.node.create_subscription(
+            String, 'shape', self.shape_callback, 10)
 
         self.lane_detector = LaneDetector(self.node)
 
@@ -41,6 +45,11 @@ class Sensor:
         self.cv_bridge = CvBridge()
         self.command = None
         self.detected_lane = None
+        self.shape = None
+
+    def shape_callback(self, msg):
+        self.shape = msg.data
+        # self.logger.warn(self.shape)
 
     def odom_callback(self, msg):
         # self.node.get_logger().info('Odometry callback triggered')
@@ -60,7 +69,7 @@ class Sensor:
 
     def init(self):
         # self.logger.info("wcrc_ctrl sensor wait...")
-        if self.odom_msg is not None and self.camera_msg is not None and self.detected_lane is not None:
+        if self.odom_msg is not None and self.camera_msg is not None and self.detected_lane is not None and self.shape is not None:
             return True
         else:
             return False

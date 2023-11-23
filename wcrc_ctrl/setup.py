@@ -12,7 +12,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         # launch
         ('share/' + package_name + '/launch',
-         ['launch/position_ctrl.launch.py']),
+         ['launch/wcrc.launch.py']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

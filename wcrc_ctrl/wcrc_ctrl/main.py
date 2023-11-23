@@ -23,8 +23,11 @@ class Wcrc(Node):
     def control(self):
         if self.sensor.init() == False:
             self.logger.info("wcrc_ctrl sensor wait...")
+            
             return
-        self.logger.info(str(self.wcrc_ctrl.sensor.detected_lane))
+        self.wcrc_ctrl.control()
+        
+        # self.logger.info(str(self.wcrc_ctrl.sensor.detected_lane))
 
 
 def main(args=None):
