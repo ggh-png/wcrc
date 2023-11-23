@@ -10,7 +10,7 @@ import numpy as np
 from wcrc_ctrl.Sensor import Sensor
 from wcrc_ctrl.Logger import Logger
 from wcrc_ctrl.MovingCtrl import MovingCtrl
-
+# from wcrc_ctrl.LaneDetector import LaneDetector
 
 class WcrcCtrl:
     def __init__(self, node: Node):
@@ -23,6 +23,8 @@ class WcrcCtrl:
         self.logger = Logger(self.node)
         self.sensor = Sensor(self.node)
         self.moving_ctrl = MovingCtrl(self.node)
+        # self.lane_detector = LaneDetector(self.node)
+        
 
         self.detect_node = self.node.create_subscription(
             String, "/detect", self.detect_callback, 10
@@ -52,8 +54,8 @@ class WcrcCtrl:
         # 6 X 6 맵을 만듭니다.
         self.map = [[0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0],
-                    [0, 1, 1, 1, 0, 0],
-                    [0, 0, 0, 1, 0, 0],
+                    [0, 0, 1, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0]]
         
@@ -104,12 +106,13 @@ class WcrcCtrl:
         # self.init_flag = False
         # all direction search check list 
         # direction_check = [0, 0, 0, 0]
+        self.current_node = self.sensor.detected_lane
         if self.dir == 0:
             node_present = self.current_node
             nx, ny = self.x + \
                 self.dx[self.dir], self.y + \
                 self.dy[self.dir]
-            if node_present and self.map[ny][nx] and self.visited[ny][nx] == 0:
+            if node_present is not 1004   and self.visited[ny][nx] == 0:
                 if self.visited[ny][nx]:
                     return
                 self.visited[ny][nx] = 1
@@ -138,7 +141,7 @@ class WcrcCtrl:
             nx, ny = self.x + \
                 self.dx[self.dir], self.y + \
                 self.dy[self.dir]
-            if node_present and self.map[ny][nx] and self.visited[ny][nx] == 0:
+            if node_present is not 1004   and self.visited[ny][nx] == 0:
 
                 # 이미 방문한 곳이라면 방향을 바꿔서 탐색합니다.
                 if self.visited[ny][nx]:
@@ -170,7 +173,7 @@ class WcrcCtrl:
             nx, ny = self.x + \
                 self.dx[self.dir], self.y + \
                 self.dy[self.dir]
-            if node_present and self.map[ny][nx] and self.visited[ny][nx] == 0:
+            if node_present is not 1004   and self.visited[ny][nx] == 0:
                 if self.visited[ny][nx]:
                     return
                 self.visited[ny][nx] = 1
@@ -200,7 +203,7 @@ class WcrcCtrl:
             nx, ny = self.x + \
                 self.dx[self.dir], self.y + \
                 self.dy[self.dir]
-            if node_present and self.map[ny][nx] and self.visited[ny][nx] == 0:
+            if node_present is not 1004  and self.visited[ny][nx] == 0:
                 if self.visited[ny][nx]:
                     return
                 self.visited[ny][nx] = 1

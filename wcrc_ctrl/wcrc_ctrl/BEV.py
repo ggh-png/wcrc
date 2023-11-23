@@ -13,18 +13,17 @@ class BEV:
 
     def __init__(self):
         # calibration config
-        self.img_size = (1280, 960)  # Update to new image size
-        self.warp_img_w, self.warp_img_h, self.warp_img_mid = 1280, 960, 320  # Update the output image dimensions accordingly
+        self.img_size = (640, 480)
+        self.warp_img_w, self.warp_img_h, self.warp_img_mid = 500, 300, 60
 
         # perspective config
-        # The source points here would need to be adjusted according to the specific camera setup and the required region of interest.
-        # self.warp_src = np.array([[0, 0], [1279, 0],
-        #                             [0, 959], [1279, 959]], dtype=np.float32)
-        self.warp_src = np.array([[450,475], [800,475],
-                                  [230, 715], [1010,715]], dtype=np.float32)
-        # Adjusted to new image width and height
-        self.warp_dist = np.array([[0, 0], [1279, 0],
-                                   [0, 959], [1279, 959]], dtype=np.float32)
+        warpx_mid, warpx_margin_hi, warpx_margin_lo, warpy_hi, warpy_lo = 320, 200, 319, 325, 375
+        self.warp_src = np.array([[420, 470], [860,470],
+                                  [0,720], [1280,720]], dtype=np.float32)
+
+        # Adjusted to new image width
+        self.warp_dist = np.array([[60, 0], [500-60, 0],
+                                   [60, 299], [500-60, 299]], dtype=np.float32)
 
         self.M = cv2.getPerspectiveTransform(self.warp_src, self.warp_dist)
 
@@ -33,6 +32,7 @@ class BEV:
             img, self.M, (self.warp_img_w, self.warp_img_h), flags=cv2.INTER_LINEAR)
         if show:
             cv2.imshow('bird-eye-view', img)
+
             cv2.waitKey(1)
         return img
 

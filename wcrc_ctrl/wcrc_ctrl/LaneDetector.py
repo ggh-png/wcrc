@@ -10,7 +10,7 @@ import numpy as np
 from collections import deque
 from wcrc_ctrl.BEV import BEV
 from wcrc_ctrl.Logger import Logger
-from wcrc_ctrl.Sensor import Sensor
+# from wcrc_ctrl.Sensor import Sensor
 
 
 # colors
@@ -32,7 +32,7 @@ class LaneDetector:
         self.bev = BEV()
 
         # canny params
-        self.canny_low, self.canny_high = 100, 120
+        self.canny_low, self.canny_high = 40, 120
 
         # HoughLineP params
         self.hough_threshold, self.min_length, self.min_gap = 10, 50, 10
@@ -49,16 +49,16 @@ class LaneDetector:
         self.target_lane = 0.0
 
     def to_canny(self, img, show=False):
-        img = cv2.GaussianBlur(img, (7, 7), 0)
+        img = cv2.GaussianBlur(img, (9, 9), 0)
         img = cv2.Canny(img, self.canny_low, self.canny_high)
-        if show:
+        if show: 
             cv2.imshow('canny', img)
             cv2.waitKey(1)
         return img
 
     def hough(self, img, show=False):
         lines = cv2.HoughLinesP(
-            img, 1, np.pi/180, self.hough_threshold, self.min_gap, self.min_length)
+            img, 1, np.pi/360, self.hough_threshold, self.min_gap, self.min_length)
         if show:
             hough_img = np.zeros((img.shape[0], img.shape[1], 3))
             if lines is not None:
@@ -170,7 +170,7 @@ class LaneDetector:
             self.lane = closest_lane
         else:
             # ?? ??? ??? ??? ???? ?????.
-            self.lane = 320
+            self.lane = 1004
 
     def mark_lane(self, img, lane=None):
         '''
@@ -198,10 +198,13 @@ class LaneDetector:
         cte : pixels
         '''
         if img is None:
-            return 640
+            return 1004
+        
+        cv2.imshow('img', img)
+        cv2.waitKey(1)
         canny = self.to_canny(img, show=True)
         bev = self.bev(canny, show=True)
-        lines = self.hough(bev, show=False)
+        lines = self.hough(bev, show=True)
         positions = self.filter(lines, show=False)
         lane_candidates = self.get_cluster(positions)
         predicted_lane = self.predict_lane()
