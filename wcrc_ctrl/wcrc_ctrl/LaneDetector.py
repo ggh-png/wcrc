@@ -35,7 +35,7 @@ class LaneDetector:
         self.canny_low, self.canny_high = 40, 120
 
         # HoughLineP params
-        self.hough_threshold, self.min_length, self.min_gap = 10, 50, 10
+        self.hough_threshold, self.min_length, self.max_gap = 5, 20, 10
 
         # initial state
         self.angle = 0.0
@@ -51,14 +51,15 @@ class LaneDetector:
     def to_canny(self, img, show=False):
         img = cv2.GaussianBlur(img, (9, 9), 0)
         img = cv2.Canny(img, self.canny_low, self.canny_high)
-        if show: 
+        if show:
             cv2.imshow('canny', img)
             cv2.waitKey(1)
         return img
 
     def hough(self, img, show=False):
+
         lines = cv2.HoughLinesP(
-            img, 1, np.pi/360, self.hough_threshold, self.min_gap, self.min_length)
+            img, 1, np.pi / 180, self.hough_threshold, self.min_length, self.max_gap)
         if show:
             hough_img = np.zeros((img.shape[0], img.shape[1], 3))
             if lines is not None:
@@ -67,6 +68,31 @@ class LaneDetector:
             cv2.imshow('hough', hough_img)
             cv2.waitKey(1)
         return lines
+
+    def find_best_pair(self, lines, img):
+        pass
+
+    def draw_lines(self, img, lines):
+        width = img.shape[1]
+
+        if lines is not None:
+            for x1, y1, x2, y2 in lines:
+                if x2 - x1 == 0:
+                    intercept = y1
+                    start_point = (0, int(intercept))  # Start at x = 0
+                    end_point = (
+                        width - 1, int(intercept))
+                    cv2.line(img, start_point,
+                             end_point, (255, 0, 0), 3)
+                else:
+                    slope = (y2 - y1) / (x2 - x1)
+                    intercept = y1 - slope * x1
+
+                    start_point = (0, int(intercept))  # Start at x = 0
+                    end_point = (
+                        width - 1, int(slope * (width - 1) + intercept))
+                    cv2.line(img, start_point,
+                             end_point, (255, 0, 0), 3)
 
     def filter(self, lines, show=True):
         '''
@@ -199,12 +225,64 @@ class LaneDetector:
         '''
         if img is None:
             return 1004
-        
-        cv2.imshow('img', img)
-        cv2.waitKey(1)
+
         canny = self.to_canny(img, show=True)
-        bev = self.bev(canny, show=True)
+        image_height = img.shape[0]
+        image_width = img.shape[1]
+        x_padding = 500
+        y_top_padding = 660
+        # 1280 x 720
+        roi_org = img[y_top_padding:720, x_padding:image_width-x_padding]
+        bev = canny[y_top_padding:720, x_padding:image_width-x_padding]
+        window_width = 60
+        window_height = bev.shape[0]
+
+        window_step = 20
+        i = 0
+        mean = [0, 0, 0]
+        means = []
+        black_min_means = [150, 150, 150]
+        yellow_min_means = [120, 200, 230]
+        yellow_max_means = [160, 255, 255]
+
+        goal_means = yellow_min_means
+        goal_max_means = yellow_max_means
+        detected = False
+        while True:
+            start_x = window_step * i
+            end_x = start_x + window_width
+
+            if end_x > bev.shape[1]:
+                break
+
+            roi = roi_org[0:window_height, start_x:end_x]
+            mean_values = cv2.mean(roi)
+
+            means.append(mean_values)
+            mean[0] += mean_values[0]
+            mean[1] += mean_values[1]
+            mean[2] += mean_values[2]
+
+            r_valid = goal_means[0] <= mean_values[0] <= goal_max_means[0]
+            g_valid = goal_means[1] <= mean_values[1] <= goal_max_means[1]
+            b_valid = goal_means[2] <= mean_values[2] <= goal_max_means[2]
+
+            if r_valid and g_valid and b_valid:
+                detected = True
+                
+            # print(mean_values)
+            # cv2.imshow('max_roi', roi)
+            # cv2.waitKey(0)
+
+            i += 1
+
+        print("detected: ", detected)
+        # bev = self.bev(canny, show=True)
         lines = self.hough(bev, show=True)
+
+        cv2.imshow('bev', bev)
+        cv2.waitKey(1)
+
         positions = self.filter(lines, show=False)
         lane_candidates = self.get_cluster(positions)
         predicted_lane = self.predict_lane()
